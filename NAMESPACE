@@ -1,0 +1,12 @@
+useDynLib("SAM")
+export(spam,l1svm,fastscr,
+	print.spam,plot.spam,predict.spam,
+	print.l1svm,plot.l1svm,predict.l1svm
+)
+
+S3method("print","spam")
+S3method("plot","spam")
+S3method("predict","spam")
+S3method("print","l1svm")
+S3method("plot","l1svm")
+S3method("predict","l1svm")
