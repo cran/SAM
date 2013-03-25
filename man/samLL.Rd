@@ -1,0 +1,106 @@
+\name{samLL}
+\alias{samLL}
+\title{
+Training function of Sparse Additive Logistic Regression
+}
+\description{
+The logistic model is learned using training data.
+}
+\usage{
+samLL(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.1, thol=1e-5, max.ite = 1e5)
+}
+\arguments{
+  \item{X}{
+The \code{n} by \code{d} design matrix of the training set, where \code{n} is sample size and \code{d} is dimension.
+}
+  \item{y}{
+The \code{n}-dimensional label vector of the training set, where \code{n} is sample size. Labels must be coded in 1 and 0.
+}
+  \item{p}{
+The number of baisis spline functions. The default value is 3.
+}
+  \item{lambda}{
+A user supplied lambda sequence. Typical usage is to have the program compute its own lambda sequence based on nlambda and lambda.min.ratio. Supplying a value of lambda overrides this. WARNING: use with care. Do not supply a single value for lambda. Supply instead a decreasing sequence of lambda values. samLL relies on its warms starts for speed, and its often faster to fit a whole path than compute a single fit.
+}
+  \item{nlambda}{
+The number of lambda values. The default value is 20.
+}
+  \item{lambda.min.ratio}{
+Smallest value for lambda, as a fraction of lambda.max, the (data derived) entry value (i.e. the smallest value for which all coefficients are zero). The default is 0.1.}
+  \item{thol}{
+Stopping precision. The default value is 1e-5.
+}
+  \item{max.ite}{
+The number of maximum iterations. The default value is 1e5.
+}
+}
+\details{
+We adopt various computational algorithms including the block coordinate descent, fast iterative soft-thresholding algorithm, and newton method. The computation is further accelerated by "warm-start" and "active-set" tricks.
+}
+\value{
+  \item{p}{
+The number of baisis spline functions used in training.  
+}
+  \item{X.min}{
+A vector with each entry corresponding to the minimum of each input variable. (Used for rescaling in testing)
+}
+  \item{X.ran}{
+A vector with each entry corresponding to the range of each input variable. (Used for rescaling in testing)
+}
+  \item{lambda}{
+A sequence of regularization parameter used in training.
+}
+  \item{w}{
+The solution path matrix (\code{d*p+1} by length of \code{lambda}) with each column corresponding to a regularization parameter. Since we use the basis expansion with the intercept, the length of each column is \code{d*p+1}.
+}
+  \item{df}{
+The degree of freedom of the solution path (The number of non-zero component function)
+}
+  \item{func_norm}{
+The functional norm matrix (\code{d} by length of \code{lambda}) with each column corresponds to a regularization parameter. Since we have \code{d} input variabls, the length of each column is \code{d}.
+}
+}
+\references{
+P. Ravikumar, J. Lafferty, H.Liu and L. Wasserman. "Sparse Additive Models", \emph{Journal of Royal Statistical Society: Series B}, 2009.\cr
+T. Zhao and H.Liu. "Sparse Additive Machine", \emph{International Conference on Artificial Intelligence and Statistics}, 2012.\cr
+}
+\author{
+Tuo Zhao, Xingguo Li, Han Liu, Kathryn Roeder\cr
+Maintainers: Tuo Zhao<tourzhao@gmail.com>
+}
+\seealso{
+\code{\link{SAM}},\code{\link{plot.samLL},\link{print.samLL},\link{predict.samLL}}
+}
+
+\examples{
+
+## generating training data
+n = 200
+d = 100
+X = 0.5*matrix(runif(n*d),n,d) + matrix(rep(0.5*runif(n),d),n,d)
+y = sign(((X[,1]-0.5)^2 + (X[,2]-0.5)^2)-0.06)
+
+## flipping about 5 percent of y
+y = y*sign(runif(n)-0.05) 
+y = sign(y==1)
+
+## Training
+out.trn = samLL(X,y)
+out.trn
+
+## plotting solution path
+plot(out.trn)
+
+## generating testing data
+nt = 1000
+Xt = 0.5*matrix(runif(nt*d),nt,d) + matrix(rep(0.5*runif(nt),d),nt,d)
+
+yt = sign(((Xt[,1]-0.5)^2 + (Xt[,2]-0.5)^2)-0.06)
+
+## flipping about 5 percent of y
+yt = yt*sign(runif(nt)-0.05) 
+yt = sign(yt==1)
+
+## predicting response
+out.tst = predict(out.trn,Xt)
+}

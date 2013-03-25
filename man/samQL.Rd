@@ -1,0 +1,106 @@
+\name{samQL}
+\alias{samQL}
+\title{
+Training function of Sparse Additive Models
+}
+\description{
+The regression model is learned using training data.
+}
+\usage{
+samQL(X, y, p = 3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e-3, thol = 1e-05, max.ite = 1e5)
+}
+\arguments{
+  \item{X}{
+The \code{n} by \code{d} design matrix of the training set, where \code{n} is sample size and \code{d} is dimension.
+}
+  \item{y}{
+The \code{n}-dimensional response vector of the training set, where \code{n} is sample size.
+}
+  \item{p}{
+The number of baisis spline functions. The default value is 3.
+}
+  \item{lambda}{
+A user supplied lambda sequence. Typical usage is to have the program compute its own lambda sequence based on nlambda and lambda.min.ratio. Supplying a value of lambda overrides this. WARNING: use with care. Do not supply a single value for lambda. Supply instead a decreasing sequence of lambda values. samQL relies on its warms starts for speed, and its often faster to fit a whole path than compute a single fit.
+}
+  \item{nlambda}{
+The number of lambda values. The default value is 30.
+}
+  \item{lambda.min.ratio}{
+Smallest value for lambda, as a fraction of lambda.max, the (data derived) entry value (i.e. the smallest value for which all coefficients are zero). The default is 5e-3.}
+  \item{thol}{
+Stopping precision. The default value is 1e-5.
+}
+  \item{max.ite}{
+The number of maximum iterations. The default value is 1e5.
+}
+}
+\details{
+We adopt various computational algorithms including the block coordinate descent, fast iterative soft-thresholding algorithm, and newton method. The computation is further accelerated by "warm-start" and "active-set" tricks.
+}
+\value{
+  \item{p}{
+The number of baisis spline functions used in training.  
+}
+  \item{X.min}{
+A vector with each entry corresponding to the minimum of each input variable. (Used for rescaling in testing)
+}
+  \item{X.ran}{
+A vector with each entry corresponding to the range of each input variable. (Used for rescaling in testing)
+}
+  \item{lambda}{
+A sequence of regularization parameter used in training.
+}
+  \item{w}{
+The solution path matrix (\code{d*p} by length of \code{lambda}) with each column corresponding to a regularization parameter. Since we use the basis expansion, the length of each column is \code{d*p}.
+}
+  \item{intercept}{
+The solution path of the intercept.
+}
+  \item{df}{
+The degree of freedom of the solution path (The number of non-zero component function)
+}
+  \item{func_norm}{
+The functional norm matrix (\code{d} by length of \code{lambda}) with each column corresponds to a regularization parameter. Since we have \code{d} input variabls, the length of each column is \code{d}.
+}
+  \item{sse}{
+Sums of square errors of the solution path.
+}
+}
+\references{
+P. Ravikumar, J. Lafferty, H.Liu and L. Wasserman. "Sparse Additive Models", \emph{Journal of Royal Statistical Society: Series B}, 2009.\cr
+T. Zhao and H.Liu. "Sparse Additive Machine", \emph{International Conference on Artificial Intelligence and Statistics}, 2012.\cr
+}
+\author{
+Tuo Zhao, Xingguo Li, Han Liu, Kathryn Roeder\cr
+Maintainers: Tuo Zhao<tourzhao@gmail.com>
+}
+\seealso{
+\code{\link{SAM}},\code{\link{plot.samQL},\link{print.samQL},\link{predict.samQL}}
+}
+
+\examples{
+
+## generating training data
+n = 100
+d = 500
+X = 0.5*matrix(runif(n*d),n,d) + matrix(rep(0.5*runif(n),d),n,d)
+
+## generating response
+y = -2*sin(X[,1]) + X[,2]^2-1/3 + X[,3]-1/2 + exp(-X[,4])+exp(-1)-1
+
+## Training
+out.trn = samQL(X,y)
+out.trn
+
+## plotting solution path
+plot(out.trn)
+
+## generating testing data
+nt = 1000
+Xt = 0.5*matrix(runif(nt*d),nt,d) + matrix(rep(0.5*runif(nt),d),nt,d)
+
+yt = -2*sin(Xt[,1]) + Xt[,2]^2-1/3 + Xt[,3]-1/2 + exp(-Xt[,4])+exp(-1)-1
+
+## predicting response
+out.tst = predict(out.trn,Xt)
+}

@@ -1,12 +1,15 @@
 useDynLib("SAM")
-export(spam,l1svm,fastscr,
-	print.spam,plot.spam,predict.spam,
-	print.l1svm,plot.l1svm,predict.l1svm
-)
+export(samQL,print.samQL,plot.samQL,predict.samQL,samHL,print.samHL,plot.samHL,predict.samHL,samLL,print.samLL,plot.samLL,predict.samLL,samEL,print.samEL,plot.samEL,predict.samEL)
 
-S3method("print","spam")
-S3method("plot","spam")
-S3method("predict","spam")
-S3method("print","l1svm")
-S3method("plot","l1svm")
-S3method("predict","l1svm")
+S3method("print","samQL")
+S3method("plot","samQL")
+S3method("predict","samQL")
+S3method("print","samHL")
+S3method("plot","samHL")
+S3method("predict","samHL")
+S3method("print","samLL")
+S3method("plot","samLL")
+S3method("predict","samLL")
+S3method("print","samEL")
+S3method("plot","samEL")
+S3method("predict","samEL")
