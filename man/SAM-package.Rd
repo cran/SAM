@@ -12,8 +12,8 @@ The package SAM targets at high dimensional predictive modeling (regression and 
 \tabular{ll}{
 Package: \tab SAM\cr
 Type: \tab Package\cr
-Version: \tab 1.0.3\cr
-Date: \tab 2013-03-25\cr
+Version: \tab 1.0.4\cr
+Date: \tab 2013-09-17\cr
 License: \tab GPL-2 \cr
 }
 }
@@ -26,5 +26,5 @@ Tuo Zhao, Xingguo Li, Han Liu, and Kathryn Roeder\cr
 Maintainers: Tuo Zhao<tourzhao@gmail.com>
 }
 \seealso{
-\code{\link{samQL}},\code{\link{samHL}},\code{\link{samLL}}
+\code{\link{samQL}},\code{\link{samHL}},\code{\link{samLL}},\code{\link{samEL}}
 }

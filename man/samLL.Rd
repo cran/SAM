@@ -7,7 +7,8 @@ Training function of Sparse Additive Logistic Regression
 The logistic model is learned using training data.
 }
 \usage{
-samLL(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.1, thol=1e-5, max.ite = 1e5)
+samLL(X, y, p=3, lambda = NULL, nlambda = NULL, 
+lambda.min.ratio = 0.1, thol=1e-5, max.ite = 1e5)
 }
 \arguments{
   \item{X}{

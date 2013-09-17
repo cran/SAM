@@ -7,7 +7,8 @@ Training function of Sparse Additive Possion Regression
 The log-linear model is learned using training data.
 }
 \usage{
-samEL(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.25, thol=1e-5, max.ite = 1e5)
+samEL(X, y, p=3, lambda = NULL, nlambda = NULL, 
+lambda.min.ratio = 0.25, thol=1e-5, max.ite = 1e5)
 }
 \arguments{
   \item{X}{

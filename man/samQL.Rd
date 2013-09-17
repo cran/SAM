@@ -7,7 +7,8 @@ Training function of Sparse Additive Models
 The regression model is learned using training data.
 }
 \usage{
-samQL(X, y, p = 3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e-3, thol = 1e-05, max.ite = 1e5)
+samQL(X, y, p = 3, lambda = NULL, nlambda = NULL, 
+lambda.min.ratio = 5e-3, thol = 1e-05, max.ite = 1e5)
 }
 \arguments{
   \item{X}{

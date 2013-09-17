@@ -44,9 +44,10 @@ samQL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e
 	Z = Z - Z.mean.rep
 	y.mean = mean(y)
 	y = y - y.mean	
-			
+	
+	lambda_input = 1		
 	if(is.null(lambda)){
-		lambda_input = 0;
+		lambda_input = 0
 		if(is.null(nlambda))
 			nlambda = 30
 		lambda = exp(seq(log(1),log(lambda.min.ratio),length = nlambda))

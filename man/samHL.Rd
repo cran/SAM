@@ -7,7 +7,8 @@ Training function of Sparse Additive Machine
 The classifier is learned using training data.
 }
 \usage{
-samHL(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.4, thol=1e-5, mu = 5e-2, max.ite = 1e5)
+samHL(X, y, p=3, lambda = NULL, nlambda = NULL, 
+lambda.min.ratio = 0.4, thol=1e-5, mu = 5e-2, max.ite = 1e5)
 }
 \arguments{
   \item{X}{
