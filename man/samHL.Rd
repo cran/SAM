@@ -60,6 +60,12 @@ The solution path matrix (\code{d*p+1} by length of \code{lambda}) with each col
   \item{df}{
 The degree of freedom of the solution path (The number of non-zero component function)
 }
+  \item{knots}{
+The \code{p-1} by \code{d} matrix. Each column contains the knots applied to the corresponding variable.
+}
+  \item{Boundary.knots}{
+The \code{2} by \code{d} matrix. Each column contains the boundary points applied to the corresponding variable.
+}
   \item{func_norm}{
 The functional norm matrix (\code{d} by length of \code{lambda}) with each column corresponds to a regularization parameter. Since we have \code{d} input variabls, the length of each column is \code{d}.
 }

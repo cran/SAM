@@ -43,11 +43,14 @@ samLL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
 	fit$X.ran = X.ran	
 	
 	Z = matrix(0,n,m)
-
+	fit$nkots = matrix(0,p-1,d)
+	fit$Boundary.knots = matrix(0,2,d)
 	for(j in 1:d){
-		j
 		tmp = (j-1)*p + c(1:p)
-		Z[,tmp] = ns(X[,j],df=p)
+		tmp0 = ns(X[,j],df=p)
+		Z[,tmp] = tmp0
+		fit$nkots[,j] = attr(tmp0,'knots')
+		fit$Boundary.knots[,j] = attr(tmp0,'Boundary.knots')
 	}
 	
 	L0 = norm(Z,"f")^2
@@ -111,9 +114,9 @@ predict.samLL = function(object, newdata, thol = 0.5 ,...){
 
 	for(j in 1:d){
 		tmp = (j-1)*object$p + c(1:object$p)
-		Zt[,tmp] = ns(newdata[,j],df=object$p)
+		Zt[,tmp] = ns(newdata[,j],df=object$p,knots=object$knots[,j],Boundary.knots=object$Boundary.knots[,j])
 	}
-	
+		
 	out$probs = exp(cbind(Zt,rep(1,nt))%*%object$w)
 	out$probs = out$prob/(1+out$prob)
 	out$labels = sign(out$values>thol)

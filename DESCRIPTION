@@ -1,8 +1,8 @@
 Package: SAM
 Type: Package
 Title: Sparse Additive Modelling
-Version: 1.0.4
-Date: 2013-09-17
+Version: 1.0.5
+Date: 2014-02-11
 Author: Tuo Zhao, Xingguo Li, Han Liu, and Kathryn Roeder
 Maintainer: Tuo Zhao <tourzhao@gmail.com>
 Depends: R (>= 2.14), splines
@@ -16,7 +16,7 @@ Description: The package SAM targets at high dimensional predictive
         computation is further accelerated by warm-start and active-set
         tricks.
 License: GPL-2
-Packaged: 2013-09-18 14:59:42 UTC; tourzhao
+Packaged: 2014-02-12 07:41:52 UTC; tourzhao
 Repository: CRAN
-Date/Publication: 2013-09-18 17:08:55
+Date/Publication: 2014-02-12 09:34:38
 NeedsCompilation: yes

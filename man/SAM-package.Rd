@@ -12,8 +12,8 @@ The package SAM targets at high dimensional predictive modeling (regression and 
 \tabular{ll}{
 Package: \tab SAM\cr
 Type: \tab Package\cr
-Version: \tab 1.0.4\cr
-Date: \tab 2013-09-17\cr
+Version: \tab 1.0.5\cr
+Date: \tab 2014-02-11\cr
 License: \tab GPL-2 \cr
 }
 }
