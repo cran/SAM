@@ -1,4 +1,4 @@
-e4d20833722e09ed0c41e3dd43cbd6ea *DESCRIPTION
+43811d137c02b1b74a079f71a0c7a05b *DESCRIPTION
 7a4209f0b7ffb9d6c411d4de301a1fa6 *NAMESPACE
 51d983426dc7b14585b4a4414300b53e *R/SAM-package.R
 55b3ebf56bc1fbf08b429b7e208de1e2 *R/samEL.R
@@ -7,7 +7,7 @@ e4d20833722e09ed0c41e3dd43cbd6ea *DESCRIPTION
 b5cad3d7b0a268ff7d90562923b2ac20 *R/samQL.R
 c6328dafab43be947e6d8dd5cbd5877b *cleanup
 b926e9e10f7355be8e473f7e630e7c07 *configure
-2e9fb7f2a46f2fb7fb9af4dce120b4ea *configure.ac
+4480754b2f7c4e438b5c2ef57e6cedb7 *configure.ac
 8a4a33f7aaab9a5b04753efba7763a1d *man/SAM-package.Rd
 f3633e00895435f929418a867f6ca861 *man/plot.samEL.Rd
 d6a644401565082c9dc3197e4aad9e28 *man/plot.samHL.Rd
