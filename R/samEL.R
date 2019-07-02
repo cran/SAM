@@ -143,7 +143,7 @@ samEL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
            LL0 = as.double(L0), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p),
            xx = as.double(matrix(0,m+1,nlambda)), aa0 = as.double(a0), mmax_ite = as.integer(max.ite),
            tthol = as.double(thol), regfunc = as.character(regfunc), aalpha = as.double(0.5),
-           z = as.double(z),df = as.integer(rep(0,nlambda)),func_norm = as.double(matrix(0,d,nlambda)), package="SAM")
+           z = as.double(z),df = as.integer(rep(0,nlambda)),func_norm = as.double(matrix(0,d,nlambda)), PACKAGE="SAM")
 
   fit$lambda = out$lambda
   fit$w = matrix(out$xx,ncol=nlambda)

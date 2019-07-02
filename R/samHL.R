@@ -143,7 +143,7 @@ samHL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
 
   L0 = norm(Z,'f')^2/mu
 
-  out = .C("grpSVM", Z = as.double(Z), lambda = as.double(lambda), nnlambda = as.integer(nlambda), LL0 = as.double(L0), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p),aa0 = as.double(a0), xx = as.double(matrix(0,m+1,nlambda)), mmu = as.double(mu), mmax_ite = as.integer(max.ite), tthol = as.double(thol),aalpha = as.double(0.5),df=as.double(rep(0,nlambda)),func_norm=as.double(matrix(0,d,nlambda)),package="SAM")
+  out = .C("grpSVM", Z = as.double(Z), lambda = as.double(lambda), nnlambda = as.integer(nlambda), LL0 = as.double(L0), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p),aa0 = as.double(a0), xx = as.double(matrix(0,m+1,nlambda)), mmu = as.double(mu), mmax_ite = as.integer(max.ite), tthol = as.double(thol),aalpha = as.double(0.5),df=as.double(rep(0,nlambda)),func_norm=as.double(matrix(0,d,nlambda)),PACKAGE="SAM")
 
   fit$lambda = out$lambda
   fit$w = matrix(out$xx,ncol=nlambda)
