@@ -143,7 +143,7 @@ samEL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
            LL0 = as.double(L0), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p),
            xx = as.double(matrix(0,m+1,nlambda)), aa0 = as.double(a0), mmax_ite = as.integer(max.ite),
            tthol = as.double(thol), regfunc = as.character(regfunc), aalpha = as.double(0.5),
-           z = as.double(z),df = as.integer(rep(0,nlambda)),func_norm = as.double(matrix(0,d,nlambda)), PACKAGE="SAM")
+           z = as.double(z),df = as.integer(rep(0,nlambda)),func_norm = as.double(matrix(0,d,nlambda)), package="SAM")
 
   fit$lambda = out$lambda
   fit$w = matrix(out$xx,ncol=nlambda)
@@ -184,7 +184,7 @@ print.samEL = function(x,...){
 #' @export
 plot.samEL = function(x,...){
   par = par(omi = c(0.0, 0.0, 0, 0), mai = c(1, 1, 0.1, 0.1))
-  matplot(x$lambda[length(x$lambda):1],t(x$func_norm),type="l",xlab="Regularization Parameters",ylab = "Functional Norms",cex.lab=2,log="x",lwd=2)
+  matplot(x$lambda,t(x$func_norm),type="l",xlab="Regularization Parameters",ylab = "Functional Norms",cex.lab=2,log="x",lwd=2)
 }
 
 #' Prediction function for S3 class \code{"samEL"}
