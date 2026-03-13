@@ -25,6 +25,18 @@
 #' @param thol Stopping tolerance. The default value is \code{1e-5}.
 #' @param max.ite Maximum number of iterations. The default value is \code{1e5}.
 #' @param regfunc A string indicating the regularizer. The default value is "L1". You can also assign "MCP" or "SCAD" to it.
+#' @param dfmax Maximum number of non-zero groups allowed. When the number of
+#'   non-zero groups reaches \code{dfmax}, the regularization path is
+#'   terminated early. \code{NULL} (default) means no limit.
+#' @param verbose Logical; if \code{TRUE}, print iteration info for each lambda.
+#' @param dev.ratio.thr Deviance ratio threshold for early stopping.
+#'   When the deviance ratio \eqn{1 - D(\lambda)/D_0} exceeds this value the
+#'   regularization path is terminated early. \code{NULL} (default) disables
+#'   this criterion.
+#' @param dev.change.thr Relative deviance change threshold for early stopping.
+#'   When the relative change in deviance over the last few lambda steps falls
+#'   below this value, the path is terminated. \code{NULL} (default) disables
+#'   this criterion.
 #' @return
 #' \item{p}{
 #'   The number of basis spline functions used in training.
@@ -83,7 +95,7 @@
 #' ## predicting response
 #' out.tst = predict(out.trn,Xt)
 #' @export
-samEL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.25, thol=1e-5, max.ite = 1e5, regfunc="L1"){
+samEL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.25, thol=1e-5, max.ite = 1e5, regfunc="L1", dfmax = NULL, verbose = FALSE, dev.ratio.thr = NULL, dev.change.thr = NULL){
 
   p = .sam_validate_p(p)
   checked = .sam_validate_xy(X, y, "samEL")
@@ -116,7 +128,6 @@ samEL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
   basis = .sam_build_basis(X, p)
   Z = basis$Z
   fit$knots = basis$knots
-  fit$nkots = basis$knots
   fit$Boundary.knots = basis$Boundary.knots
 
   L0 = norm(Z,"f")^2
@@ -137,17 +148,25 @@ samEL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
     lambda = exp(seq(log(1),log(lambda.min.ratio),length=nlambda))*lambda_max
   }
 
+  dfmax_c = if (is.null(dfmax)) -1L else as.integer(dfmax)
+  verbose_c = as.integer(verbose)
+
+  runtime = proc.time()
+  dev_ratio_c = if (is.null(dev.ratio.thr)) -1.0 else as.double(dev.ratio.thr)
+  dev_change_c = if (is.null(dev.change.thr)) -1.0 else as.double(dev.change.thr)
+
   out = .C("grpPR", A = as.double(Z), y = as.double(y), lambda = as.double(lambda), nlambda = as.integer(nlambda),
            LL0 = as.double(L0), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p),
            xx = as.double(matrix(0,m+1,nlambda)), aa0 = as.double(a0), mmax_ite = as.integer(max.ite),
            tthol = as.double(thol), regfunc = as.character(regfunc), aalpha = as.double(0.5),
-           z = as.double(z),df = as.integer(rep(0,nlambda)),func_norm = as.double(matrix(0,d,nlambda)), PACKAGE="SAM")
+           z = as.double(z),df = as.integer(rep(0,nlambda)),func_norm = as.double(matrix(0,d,nlambda)), ddfmax = dfmax_c, vverbose = verbose_c, ddev_ratio_thr = dev_ratio_c, ddev_change_thr = dev_change_c, PACKAGE="SAM")
+  runtime = proc.time() - runtime
 
   fit$lambda = out$lambda
   fit$w = matrix(out$xx,ncol=nlambda)
   fit$df = out$df
   fit$func_norm = matrix(out$func_norm,ncol=nlambda)
-
+  fit$runtime = runtime
 
   class(fit) = "samEL"
   return(fit)
@@ -165,8 +184,7 @@ samEL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
 #' @seealso \code{\link{samEL}}
 #' @export
 print.samEL = function(x,...){
-  cat("Path length:",length(x$df),"\n")
-  cat("d.f.:",x$df[1],"--->",x$df[length(x$df)],"\n")
+  .sam_print_path(x, ...)
 }
 
 #' Plot function for S3 class \code{"samEL"}
@@ -182,8 +200,7 @@ print.samEL = function(x,...){
 #' @seealso \code{\link{samEL}}
 #' @export
 plot.samEL = function(x,...){
-  par = par(omi = c(0.0, 0.0, 0, 0), mai = c(1, 1, 0.1, 0.1))
-  matplot(x$lambda,t(x$func_norm),type="l",xlab="Regularization Parameters",ylab = "Functional Norms",cex.lab=2,log="x",lwd=2)
+  .sam_plot_path(x, ...)
 }
 
 #' Prediction function for S3 class \code{"samEL"}

@@ -14,7 +14,9 @@ samHL(
   thol = 1e-05,
   mu = 0.05,
   max.ite = 1e+05,
-  w = NULL
+  w = NULL,
+  dfmax = NULL,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -45,6 +47,12 @@ value is \code{0.05}.}
 
 \item{w}{Optional positive observation weights of length \code{n}. The
 default is \code{1} for all observations.}
+
+\item{dfmax}{Maximum number of non-zero groups allowed. When the number of
+non-zero groups reaches \code{dfmax}, the regularization path is
+terminated early. \code{NULL} (default) means no limit.}
+
+\item{verbose}{Logical; if \code{TRUE}, print iteration info for each lambda.}
 }
 \value{
 \item{p}{

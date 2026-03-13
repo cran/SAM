@@ -187,6 +187,16 @@ namespace SAM {
       return (deviance);
     }
 
+    // null model deviance (stored at construction)
+    double get_null_deviance() {
+      return deviance;
+    }
+
+    // current model deviance (unpenalized loss)
+    double get_current_deviance() {
+      return fabs(eval());
+    }
+
     double get_intercept() {
       return model_param.intercept;
     }

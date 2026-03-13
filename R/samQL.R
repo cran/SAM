@@ -25,6 +25,29 @@
 #' @param thol Stopping tolerance. The default value is \code{1e-5}.
 #' @param max.ite Maximum number of iterations. The default value is \code{1e5}.
 #' @param regfunc A string indicating the regularizer. The default value is "L1". You can also assign "MCP" or "SCAD" to it.
+#' @param dfmax Maximum number of non-zero groups allowed. When the number of
+#'   non-zero groups reaches \code{dfmax}, the regularization path is
+#'   terminated early. \code{NULL} (default) means no limit.
+#' @param verbose Logical; if \code{TRUE}, print iteration info for each lambda.
+#' @param dev.ratio.thr Deviance ratio threshold for early stopping.
+#'   When the deviance ratio \eqn{1 - D(\lambda)/D_0} exceeds this value the
+#'   regularization path is terminated early. \code{NULL} (default) disables
+#'   this criterion.
+#' @param dev.change.thr Relative deviance change threshold for early stopping.
+#'   When the relative change in deviance over the last few lambda steps falls
+#'   below this value, the path is terminated. \code{NULL} (default) disables
+#'   this criterion.
+#' @param solver Which solver to use: \code{"actnewton"} (default, active-set
+#'   Newton) or \code{"actgd"} (group active gradient descent with strong rule
+#'   screening). \code{"actgd"} only supports L1 regularization and is
+#'   automatically replaced by \code{"actnewton"} when \code{regfunc} is
+#'   \code{"MCP"} or \code{"SCAD"}.
+#' @param type.gaussian Which internal update strategy to use:
+#'   \code{"naive"} (default) maintains an \eqn{n}-dimensional residual vector,
+#'   \code{"covariance"} precomputes the Gram matrix and updates gradients
+#'   incrementally. \code{"covariance"} is faster when \code{d * p < n} and is
+#'   silently ignored (falls back to \code{"naive"}) otherwise.
+#'   \code{"auto"} selects automatically based on \code{d * p < n}.
 #' @return
 #' \item{p}{
 #'   The number of basis spline functions used in training.
@@ -89,7 +112,7 @@
 #' ## predicting response
 #' out.tst = predict(out.trn,Xt)
 #' @export
-samQL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e-3, thol=1e-5, max.ite = 1e5, regfunc="L1"){
+samQL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e-3, thol=1e-5, max.ite = 1e5, regfunc="L1", dfmax = NULL, verbose = FALSE, dev.ratio.thr = NULL, dev.change.thr = NULL, solver = c("actnewton", "actgd"), type.gaussian = c("naive", "covariance", "auto")){
 
   p = .sam_validate_p(p)
   checked = .sam_validate_xy(X, y, "samQL")
@@ -115,7 +138,6 @@ samQL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e
   basis = .sam_build_basis(X, p)
   Z = basis$Z
   fit$knots = basis$knots
-  fit$nkots = basis$knots
   fit$Boundary.knots = basis$Boundary.knots
 
   Z.mean = apply(Z,2,mean)
@@ -130,7 +152,21 @@ samQL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e
   }
 
 
-  out = .C("grplasso",y = as.double(y), X = as.double(Z), lambda = as.double(lambda), nnlambda = as.integer(nlambda), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p), ww = as.double(matrix(0,m,nlambda)), mmax_ite = as.integer(max.ite), tthol = as.double(thol), regfunc = as.character(regfunc), iinput = as.integer(lambda_input), df=as.integer(rep(0,nlambda)), sse=as.double(rep(0,nlambda)), func_norm = as.double(matrix(0,d,nlambda)), PACKAGE="SAM")
+  dfmax_c = if (is.null(dfmax)) -1L else as.integer(dfmax)
+  verbose_c = as.integer(verbose)
+
+  runtime = proc.time()
+  dev_ratio_c = if (is.null(dev.ratio.thr)) -1.0 else as.double(dev.ratio.thr)
+  dev_change_c = if (is.null(dev.change.thr)) -1.0 else as.double(dev.change.thr)
+
+  solver = match.arg(solver)
+  solver_type_c = if (solver == "actgd") 1L else 0L
+
+  type.gaussian = match.arg(type.gaussian)
+  type_gaussian_c = if (type.gaussian == "covariance") 1L else if (type.gaussian == "auto") 2L else 0L
+
+  out = .C("grplasso",y = as.double(y), X = as.double(Z), lambda = as.double(lambda), nnlambda = as.integer(nlambda), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p), ww = as.double(matrix(0,m,nlambda)), mmax_ite = as.integer(max.ite), tthol = as.double(thol), regfunc = as.character(regfunc), iinput = as.integer(lambda_input), df=as.integer(rep(0,nlambda)), sse=as.double(rep(0,nlambda)), func_norm = as.double(matrix(0,d,nlambda)), ddfmax = dfmax_c, vverbose = verbose_c, ddev_ratio_thr = dev_ratio_c, ddev_change_thr = dev_change_c, ssolver_type = solver_type_c, ttype_gaussian = type_gaussian_c, PACKAGE="SAM")
+  runtime = proc.time() - runtime
 
   fit$lambda = out$lambda
   fit$w = matrix(out$w,ncol=nlambda)
@@ -138,7 +174,7 @@ samQL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e
   fit$sse = out$sse
   fit$func_norm = matrix(out$func_norm,ncol=nlambda)
   fit$intercept = rep(y.mean,nlambda) - t(Z.mean)%*%fit$w
-  fit$XX = out$X
+  fit$runtime = runtime
 
   class(fit) = "samQL"
   return(fit)
@@ -156,8 +192,7 @@ samQL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 5e
 #' @seealso \code{\link{samQL}}
 #' @export
 print.samQL = function(x,...){
-  cat("Path length:",length(x$df),"\n")
-  cat("d.f.:",x$df[1],"--->",x$df[length(x$df)],"\n")
+  .sam_print_path(x, ...)
 }
 
 #' Plot function for S3 class \code{"samQL"}
@@ -173,8 +208,7 @@ print.samQL = function(x,...){
 #' @seealso \code{\link{samQL}}
 #' @export
 plot.samQL = function(x,...){
-  par = par(omi = c(0.0, 0.0, 0, 0), mai = c(1, 1, 0.1, 0.1))
-  matplot(x$lambda,t(x$func_norm),type="l",xlab="Regularization Parameters",ylab = "Functional Norms",cex.lab=2,log="x",lwd=2)
+  .sam_plot_path(x, ...)
 }
 
 #' Prediction function for S3 class \code{"samQL"}

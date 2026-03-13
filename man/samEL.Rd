@@ -13,7 +13,11 @@ samEL(
   lambda.min.ratio = 0.25,
   thol = 1e-05,
   max.ite = 1e+05,
-  regfunc = "L1"
+  regfunc = "L1",
+  dfmax = NULL,
+  verbose = FALSE,
+  dev.ratio.thr = NULL,
+  dev.change.thr = NULL
 )
 }
 \arguments{
@@ -39,6 +43,22 @@ default is \code{0.25}.}
 \item{max.ite}{Maximum number of iterations. The default value is \code{1e5}.}
 
 \item{regfunc}{A string indicating the regularizer. The default value is "L1". You can also assign "MCP" or "SCAD" to it.}
+
+\item{dfmax}{Maximum number of non-zero groups allowed. When the number of
+non-zero groups reaches \code{dfmax}, the regularization path is
+terminated early. \code{NULL} (default) means no limit.}
+
+\item{verbose}{Logical; if \code{TRUE}, print iteration info for each lambda.}
+
+\item{dev.ratio.thr}{Deviance ratio threshold for early stopping.
+When the deviance ratio \eqn{1 - D(\lambda)/D_0} exceeds this value the
+regularization path is terminated early. \code{NULL} (default) disables
+this criterion.}
+
+\item{dev.change.thr}{Relative deviance change threshold for early stopping.
+When the relative change in deviance over the last few lambda steps falls
+below this value, the path is terminated. \code{NULL} (default) disables
+this criterion.}
 }
 \value{
 \item{p}{

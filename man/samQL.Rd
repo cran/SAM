@@ -13,7 +13,13 @@ samQL(
   lambda.min.ratio = 0.005,
   thol = 1e-05,
   max.ite = 1e+05,
-  regfunc = "L1"
+  regfunc = "L1",
+  dfmax = NULL,
+  verbose = FALSE,
+  dev.ratio.thr = NULL,
+  dev.change.thr = NULL,
+  solver = c("actnewton", "actgd"),
+  type.gaussian = c("naive", "covariance", "auto")
 )
 }
 \arguments{
@@ -39,6 +45,35 @@ default is \code{5e-3}.}
 \item{max.ite}{Maximum number of iterations. The default value is \code{1e5}.}
 
 \item{regfunc}{A string indicating the regularizer. The default value is "L1". You can also assign "MCP" or "SCAD" to it.}
+
+\item{dfmax}{Maximum number of non-zero groups allowed. When the number of
+non-zero groups reaches \code{dfmax}, the regularization path is
+terminated early. \code{NULL} (default) means no limit.}
+
+\item{verbose}{Logical; if \code{TRUE}, print iteration info for each lambda.}
+
+\item{dev.ratio.thr}{Deviance ratio threshold for early stopping.
+When the deviance ratio \eqn{1 - D(\lambda)/D_0} exceeds this value the
+regularization path is terminated early. \code{NULL} (default) disables
+this criterion.}
+
+\item{dev.change.thr}{Relative deviance change threshold for early stopping.
+When the relative change in deviance over the last few lambda steps falls
+below this value, the path is terminated. \code{NULL} (default) disables
+this criterion.}
+
+\item{solver}{Which solver to use: \code{"actnewton"} (default, active-set
+Newton) or \code{"actgd"} (group active gradient descent with strong rule
+screening). \code{"actgd"} only supports L1 regularization and is
+automatically replaced by \code{"actnewton"} when \code{regfunc} is
+\code{"MCP"} or \code{"SCAD"}.}
+
+\item{type.gaussian}{Which internal update strategy to use:
+\code{"naive"} (default) maintains an \eqn{n}-dimensional residual vector,
+\code{"covariance"} precomputes the Gram matrix and updates gradients
+incrementally. \code{"covariance"} is faster when \code{d * p < n} and is
+silently ignored (falls back to \code{"naive"}) otherwise.
+\code{"auto"} selects automatically based on \code{d * p < n}.}
 }
 \value{
 \item{p}{

@@ -150,6 +150,57 @@
   stop("Model object does not contain spline knots.", call. = FALSE)
 }
 
+# ---- coef() S3 methods ----
+
+#' @export
+coef.samQL <- function(object, lambda.idx = NULL, ...) {
+  .sam_coef(object, lambda.idx)
+}
+
+#' @export
+coef.samLL <- function(object, lambda.idx = NULL, ...) {
+  .sam_coef(object, lambda.idx)
+}
+
+#' @export
+coef.samEL <- function(object, lambda.idx = NULL, ...) {
+  .sam_coef(object, lambda.idx)
+}
+
+#' @export
+coef.samHL <- function(object, lambda.idx = NULL, ...) {
+  .sam_coef(object, lambda.idx)
+}
+
+.sam_coef <- function(object, lambda.idx) {
+  w <- object$w
+  nlambda <- ncol(w)
+  if (is.null(lambda.idx)) lambda.idx <- seq_len(nlambda)
+  if (any(lambda.idx < 1) || any(lambda.idx > nlambda)) {
+    stop("`lambda.idx` out of range.", call. = FALSE)
+  }
+  nrow_w <- nrow(w)
+  has_intercept <- !is.null(object$intercept)
+  if (has_intercept) {
+    intercept <- as.numeric(object$intercept)
+  } else {
+    # for samLL/samEL/samHL the last row of w is the intercept
+    intercept <- w[nrow_w, ]
+  }
+  list(w = w[, lambda.idx, drop = FALSE], intercept = intercept[lambda.idx])
+}
+
+.sam_print_path <- function(x, ...) {
+  cat("Path length:", length(x$df), "\n")
+  cat("d.f.:", x$df[1], "--->", x$df[length(x$df)], "\n")
+}
+
+.sam_plot_path <- function(x, ...) {
+  par = par(omi = c(0.0, 0.0, 0, 0), mai = c(1, 1, 0.1, 0.1))
+  matplot(x$lambda, t(x$func_norm), type = "l", xlab = "Regularization Parameters",
+          ylab = "Functional Norms", cex.lab = 2, log = "x", lwd = 2)
+}
+
 .sam_build_basis_newdata <- function(object, newdata) {
   p <- object$p
   d <- ncol(newdata)

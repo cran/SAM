@@ -29,6 +29,10 @@
 #' @param max.ite Maximum number of iterations. The default value is \code{1e5}.
 #' @param w Optional positive observation weights of length \code{n}. The
 #'   default is \code{1} for all observations.
+#' @param dfmax Maximum number of non-zero groups allowed. When the number of
+#'   non-zero groups reaches \code{dfmax}, the regularization path is
+#'   terminated early. \code{NULL} (default) means no limit.
+#' @param verbose Logical; if \code{TRUE}, print iteration info for each lambda.
 #' @return
 #' \item{p}{
 #'   The number of basis spline functions used in training.
@@ -90,7 +94,7 @@
 #' ## predicting response
 #' out.tst = predict(out.trn,Xt)
 #' @export
-samHL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.4, thol=1e-5, mu = 5e-2, max.ite = 1e5, w = NULL){
+samHL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.4, thol=1e-5, mu = 5e-2, max.ite = 1e5, w = NULL, dfmax = NULL, verbose = FALSE){
 
   p = .sam_validate_p(p)
   checked = .sam_validate_xy(X, y, "samHL")
@@ -130,7 +134,6 @@ samHL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
   basis = .sam_build_basis(X, p)
   Z = basis$Z
   fit$knots = basis$knots
-  fit$nkots = basis$knots
   fit$Boundary.knots = basis$Boundary.knots
 
   Z = cbind(matrix(rep(y,m),n,m)*Z,y)
@@ -145,12 +148,18 @@ samHL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
 
   L0 = norm(Z,'f')^2/mu
 
-  out = .C("grpSVM", Z = as.double(Z), w = as.double(w), lambda = as.double(lambda), nnlambda = as.integer(nlambda), LL0 = as.double(L0), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p),aa0 = as.double(a0), xx = as.double(matrix(0,m+1,nlambda)), mmu = as.double(mu), mmax_ite = as.integer(max.ite), tthol = as.double(thol),aalpha = as.double(0.5),df=as.double(rep(0,nlambda)),func_norm=as.double(matrix(0,d,nlambda)),PACKAGE="SAM")
+  dfmax_c = if (is.null(dfmax)) -1L else as.integer(dfmax)
+  verbose_c = as.integer(verbose)
+
+  runtime = proc.time()
+  out = .C("grpSVM", Z = as.double(Z), w = as.double(w), lambda = as.double(lambda), nnlambda = as.integer(nlambda), LL0 = as.double(L0), nn = as.integer(n), dd = as.integer(d), pp = as.integer(p),aa0 = as.double(a0), xx = as.double(matrix(0,m+1,nlambda)), mmu = as.double(mu), mmax_ite = as.integer(max.ite), tthol = as.double(thol),aalpha = as.double(0.5),df=as.double(rep(0,nlambda)),func_norm=as.double(matrix(0,d,nlambda)), ddfmax = dfmax_c, vverbose = verbose_c, PACKAGE="SAM")
+  runtime = proc.time() - runtime
 
   fit$lambda = out$lambda
   fit$w = matrix(out$xx,ncol=nlambda)
   fit$df = out$df
   fit$func_norm = matrix(out$func_norm,ncol=nlambda)
+  fit$runtime = runtime
 
   class(fit) = "samHL"
   return(fit)
@@ -168,8 +177,7 @@ samHL = function(X, y, p=3, lambda = NULL, nlambda = NULL, lambda.min.ratio = 0.
 #' @seealso \code{\link{samHL}}
 #' @export
 print.samHL = function(x,...){
-  cat("Path length:",length(x$df),"\n")
-  cat("d.f.:",x$df[1],"--->",x$df[length(x$df)],"\n")
+  .sam_print_path(x, ...)
 }
 
 #' Plot function for S3 class \code{"samHL"}
@@ -185,8 +193,7 @@ print.samHL = function(x,...){
 #' @seealso \code{\link{samHL}}
 #' @export
 plot.samHL = function(x,...){
-  par = par(omi = c(0.0, 0.0, 0, 0), mai = c(1, 1, 0.1, 0.1))
-  matplot(x$lambda,t(x$func_norm),type="l",xlab="Regularization Parameters",ylab = "Functional Norms",cex.lab=2,log="x",lwd=2)
+  .sam_plot_path(x, ...)
 }
 
 #' Prediction function for S3 class \code{"samHL"}

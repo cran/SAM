@@ -5,6 +5,7 @@
 #include "math.h"
 #include "R_ext/BLAS.h"
 #include "R_ext/Lapack.h"
+#include "../utils.h"
 
 void get_residual(double *r,double *Z, double* x, int *xa_idx, int *nn, int *dd, int *pp, int *mm)
 {
@@ -112,7 +113,7 @@ void grp_sth_SVM(double *sub_x, int *pp, double *iilambda0, double *gnorm)
 //[[Rcpp::depends(RcppEigen)]]
 //[[Rcpp::plugins(openmp)]
 
-extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, double *LL0, int *nn, int *dd, int *pp, double *aa0, double *xx, double *mmu, int *mmax_ite, double *tthol, double *aalpha, double *df, double *func_norm)
+extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, double *LL0, int *nn, int *dd, int *pp, double *aa0, double *xx, double *mmu, int *mmax_ite, double *tthol, double *aalpha, double *df, double *func_norm, int *ddfmax, int *vverbose)
 {
     
     int nlambda,n,d,p,m,max_ite;
@@ -131,7 +132,9 @@ extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, doub
     thol = *tthol;
     L0 = *LL0;
     alpha = *aalpha;
-    
+    int svm_dfmax = *ddfmax;
+    int svm_verbose = *vverbose;
+
     int counter,i,j,k,g_idx,lambda_idx0,lambda_idx1;
     
     double gap,gap_x,gap_y,tmp_x,gap_xx,gap_yy;
@@ -141,11 +144,7 @@ extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, doub
     xa_idx = (int *) malloc(d*sizeof(int));
     ya_idx = (int *) malloc(d*sizeof(int));
     ua_idx = (int *) malloc(n*sizeof(int));
-    
-    for(j=0;j<d;j++){
-        xa_idx[j] = 0;
-    }
-    
+
     double *r,*u,*g,*x0,*x1,*y1,*y2,t1,t2;
     r = (double *) malloc(n*sizeof(double));
     u = (double *) malloc(n*sizeof(double));
@@ -154,6 +153,17 @@ extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, doub
     x1 = (double *) malloc((m+1)*sizeof(double));
     y1 = (double *) malloc((m+1)*sizeof(double));
     y2 = (double *) malloc((m+1)*sizeof(double));
+
+    if (!xa_idx || !ya_idx || !ua_idx || !r || !u || !g || !x0 || !x1 || !y1 || !y2) {
+        free(xa_idx); free(ya_idx); free(ua_idx);
+        free(r); free(u); free(g); free(x0); free(x1); free(y1); free(y2);
+        SAM_PRINTF("grpSVM: memory allocation failed\n");
+        return;
+    }
+
+    for(j=0;j<d;j++){
+        xa_idx[j] = 0;
+    }
     
     
     for(j=0;j<m;j++){
@@ -246,12 +256,11 @@ extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, doub
         
         for(j=0;j<d;j++){
             g_idx = j*p;
-            for(k=0;k<p;k++)
+            ya_idx[j] = 0;
+            for(k=0;k<p;k++){
                 y2[g_idx+k] = x1[g_idx+k] + tmp*(x1[g_idx+k]-x0[g_idx+k]);
-            if(y2[g_idx]!=0)
-                ya_idx[j] = 1;
-            else
-                ya_idx[j] = 0;
+                if(y2[g_idx+k]!=0) ya_idx[j] = 1;
+            }
         }
         y2[m] = x1[m] + tmp*(x1[m]-x0[m]);
     
@@ -406,13 +415,12 @@ extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, doub
             
                 for(j=0;j<d;j++){
                     g_idx = j*p;
-                    for(k=0;k<p;k++)
-                        if(y1[g_idx]!=0)
-                            ya_idx[j] = 1;
-                        else
-                            ya_idx[j] = 0;
+                    ya_idx[j] = 0;
+                    for(k=0;k<p;k++){
+                        if(y1[g_idx+k]!=0){ ya_idx[j] = 1; break; }
+                    }
                 }
-            
+
                 if(gap_x<gap_y)
                     gap = gap_y;
                 else
@@ -429,11 +437,10 @@ extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, doub
                 }
                 for(j=0;j<d;j++){
                     g_idx = j*p;
-                    for(k=0;k<p;k++)
-                        if(y1[g_idx]!=0)
-                            ya_idx[j] = 1;
-                        else
-                            ya_idx[j] = 0;
+                    ya_idx[j] = 0;
+                    for(k=0;k<p;k++){
+                        if(y1[g_idx+k]!=0){ ya_idx[j] = 1; break; }
+                    }
                 }
                 gap = sqrt(gap/gap_yy);
             }
@@ -462,7 +469,28 @@ extern "C" void grpSVM(double *Z, double *w, double *lambda, int *nnlambda, doub
             }
         }
         xx[lambda_idx0+m] = x0[m];
-    
+
+        if (svm_verbose) {
+            SAM_PRINTF("lambda %d/%d: df=%d, iter=%d\n",
+                    counter + 1, nlambda, (int)df[counter], iter);
+            SAM_FFLUSH();
+        }
+
+        // early stopping: dfmax
+        if (svm_dfmax > 0 && (int)df[counter] >= svm_dfmax) {
+            // fill remaining path with current solution
+            for (int cc = counter + 1; cc < nlambda; cc++) {
+                int idx0 = cc * (m + 1);
+                int idx1 = cc * d;
+                for (j = 0; j < (m + 1); j++)
+                    xx[idx0 + j] = x0[j];
+                df[cc] = df[counter];
+                for (j = 0; j < d; j++)
+                    func_norm[idx1 + j] = func_norm[lambda_idx1 + j];
+            }
+            break;
+        }
+
     }
     
     free(xa_idx);

@@ -17,6 +17,13 @@ namespace SAM {
     double sum_r, sum_w;
     double step_size0;
 
+    // Per-group cache of wXX and step size, valid within a single W epoch.
+    // Invalidated when update_auxiliary() changes W (increments wxx_gen).
+    int wxx_gen;
+    std::vector<int> wxx_cached_gen;
+    std::vector<MatrixXd> wxx_cache;
+    std::vector<double> step_cache;
+
   public:
     GLMObjective(const double *xmat, const double *y, int n, int d, int p,
                  double step_size0, bool include_intercept);

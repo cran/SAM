@@ -1,28 +1,22 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include "R.h"
-#include "math.h"
-#include "R_ext/BLAS.h"
-#include "R_ext/Lapack.h"
-#include <vector>
 #include <Rcpp.h>
 #include <RcppEigen.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cmath>
+#include <vector>
 #include "../utils.h"
 #include "../solver/actnewton.h"
 #include "../objective/GLMObjective.h"
-#include <iostream>
+#include "c_api_utils.h"
 
 using namespace SAM;
 //[[Rcpp::depends(RcppEigen)]]
 //[[Rcpp::plugins(openmp)]
 
-extern "C" void grpLR(double *A, double *y, double *lambda, int *nnlambda, double *LL0, int *nn, int *dd, int *pp, double *xx, double *aa0, int *mmax_ite, double *tthol, char** regfunc, double *aalpha, double *z, int *df, double *func_norm) {
+extern "C" void grpLR(double *A, double *y, double *lambda, int *nnlambda, double *LL0, int *nn, int *dd, int *pp, double *xx, double *aa0, int *mmax_ite, double *tthol, char** regfunc, double *aalpha, double *z, int *df, double *func_norm, int *ddfmax, int *vverbose, double *ddev_ratio_thr, double *ddev_change_thr) {
 
   double thol = *tthol, L0 = *LL0;
   int nlambda = *nnlambda, n = *nn, d = *dd, p = *pp, max_ite = *mmax_ite;
-
-  vector<MatrixXd> V(d);
 
   for (int i = 0; i < nlambda; i++) {
     lambda[i] /= n;
@@ -30,19 +24,9 @@ extern "C" void grpLR(double *A, double *y, double *lambda, int *nnlambda, doubl
 
 
   SolverParams *param = new SolverParams();
-  param->set_lambdas(lambda, nlambda);
-  param->gamma = 3;
-  if (strcmp(*regfunc, "MCP") == 0) {
-    param->reg_type = MCP;
-  } else if (strcmp(*regfunc, "SCAD") == 0) {
-    param->reg_type = SCAD;
-  } else {
-    param->reg_type = L1;
-  }
-  param->include_intercept = true;
-  param->prec = thol;
-  param->max_iter = max_ite;
-  param->num_relaxation_round = 10;
+  make_solver_params(param, lambda, nlambda, *regfunc, thol, max_ite, *ddfmax, *vverbose);
+  param->dev_ratio_thr = *ddev_ratio_thr;
+  param->dev_change_thr = *ddev_change_thr;
 
   ObjFunction *obj = new LogisticObjective(A, y, n, d, p, L0, param->include_intercept);
 
@@ -51,7 +35,12 @@ extern "C" void grpLR(double *A, double *y, double *lambda, int *nnlambda, doubl
   vector<double> sse(nlambda, 0.0);
   solver.solve(sse.data(), df);
 
-  assert(solver.solution_path.size() == (unsigned int)nlambda);
+  if (solver.solution_path.size() != (unsigned int)nlambda) {
+    SAM_PRINTF("grpLR: solution_path size mismatch (%d vs %d)\n",
+               (int)solver.solution_path.size(), nlambda);
+    delete param;
+    return;
+  }
   for (int i = 0; i < nlambda; i++) {
     ModelParam &model = solver.solution_path[i];
     for (int j = 0; j < d; j++) {

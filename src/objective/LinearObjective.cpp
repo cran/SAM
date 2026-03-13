@@ -4,8 +4,6 @@
 
 namespace SAM {
 
-  //TODO: |beta| > lambda / a
-
   LinearObjective::LinearObjective(const double *xmat, const double *y, int n, int d, int p, bool include_intercept)
     : ObjFunction(xmat, y, n, d, p), XX(d) {
     r.resize(n);
@@ -21,7 +19,8 @@ namespace SAM {
     }
 
     r = Y.array() - model_param.intercept;
-    update_auxiliary();
+    // Compute initial gradients (update_auxiliary is no-op for perf)
+    for (int i = 0; i < d; i++) update_gradient(i);
 
     deviance = fabs(eval());
   }
@@ -43,8 +42,8 @@ namespace SAM {
     r.array() -= delta;
   }
   void LinearObjective::update_auxiliary() {
-    for (int idx = 0; idx < d; idx++)
-      update_gradient(idx);
+    // No-op: residual r is maintained incrementally by coordinate_descent
+    // and intercept_update. Gradients are computed on-demand by KKT checks.
   }
 
   void LinearObjective::update_gradient(int idx) {

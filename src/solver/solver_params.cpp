@@ -11,6 +11,11 @@ namespace SAM {
     prec = 1e-4;
     max_iter = 1000;
     include_intercept = true;
+    dfmax = -1;
+    verbose = false;
+    dev_ratio_thr = -1.0;
+    dev_change_thr = -1.0;
+    min_lambda_count = 5;
     lambdas.clear();
   }
 

@@ -1,5 +1,5 @@
-#ifndef PICASSO_SOLVER_PARAMS_H
-#define PICASSO_SOLVER_PARAMS_H
+#ifndef SAM_SOLVER_PARAMS_H
+#define SAM_SOLVER_PARAMS_H
 
 #include <vector>
 
@@ -32,6 +32,21 @@ namespace SAM {
 
     /*! whether or not to add intercept term */
     bool include_intercept;
+
+    /*! maximum number of non-zero groups; -1 = unlimited */
+    int dfmax;
+
+    /*! print iteration info */
+    bool verbose;
+
+    /*! stop if deviance ratio (1 - cur_dev/null_dev) exceeds this; -1.0 = disabled */
+    double dev_ratio_thr;
+
+    /*! stop if relative deviance change < this over last min_lambda_count steps; -1.0 = disabled */
+    double dev_change_thr;
+
+    /*! minimum lambdas before checking dev_change_thr */
+    int min_lambda_count;
 
     std::vector<double> lambdas;
 

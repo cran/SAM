@@ -59,6 +59,8 @@ namespace SAM {
     std::vector<double> stage_lambdas(d, 0);
     RegFunction *regfunc = new RegL1();
 
+    std::vector<double> dev_history(lambdas.size(), 0.0);
+
     for (size_t i = 0; i < lambdas.size(); i++) {
       // start with the previous solution on the master path
       m_obj->set_model_param(model_master);
@@ -161,9 +163,9 @@ namespace SAM {
           // update p and w
           m_obj->update_auxiliary();
 
-          if (terminate_loop_level_1) break;
+          if (!terminate_loop_level_1) continue;
 
-          // check stopping criterion 2: active set change
+          // Active set converged — check KKT on all inactive groups
           bool new_active_idx = false;
           for (int k = 0; k < d; k++)
             if (actset_indcat[k] == 0) {
@@ -175,7 +177,9 @@ namespace SAM {
               }
             }
 
+          // No KKT violations — done for this lambda
           if (!new_active_idx) break;
+          // else: violations found, continue with expanded active set
         }
 
         if (loopcnt_level_0 == 1) {
@@ -227,6 +231,64 @@ namespace SAM {
       df[i] = (int)actset_idx.size();
       sse[i] = m_obj->get_r2();
 
+      double null_dev = m_obj->get_null_deviance();
+      double cur_dev = m_obj->get_current_deviance();
+      dev_history[i] = cur_dev;
+
+      if (m_param.verbose) {
+        SAM_PRINTF("lambda %d/%d: df=%d, iter=%d\n",
+                (int)(i + 1), (int)lambdas.size(), df[i], itercnt_path[i]);
+        SAM_FFLUSH();
+      }
+
+      // early stopping: dfmax
+      if (m_param.dfmax > 0 && df[i] >= m_param.dfmax) {
+        // fill remaining path entries with current solution
+        for (size_t j = i + 1; j < lambdas.size(); j++) {
+          solution_path.push_back(m_obj->get_model_param());
+          df[j] = df[i];
+          sse[j] = sse[i];
+          itercnt_path[j] = 0;
+        }
+        break;
+      }
+
+      // early stopping: deviance ratio
+      if (m_param.dev_ratio_thr > 0 && df[i] > 0 && null_dev > 0) {
+        double dev_ratio = 1.0 - cur_dev / null_dev;
+        if (dev_ratio > m_param.dev_ratio_thr) {
+          if (m_param.verbose) {
+            SAM_PRINTF("  early stop: dev_ratio=%.6f > %.6f\n",
+                    dev_ratio, m_param.dev_ratio_thr);
+            SAM_FFLUSH();
+          }
+          for (size_t j = i + 1; j < lambdas.size(); j++) {
+            solution_path.push_back(m_obj->get_model_param());
+            df[j] = df[i]; sse[j] = sse[i]; itercnt_path[j] = 0;
+          }
+          break;
+        }
+      }
+
+      // early stopping: relative deviance change
+      if (m_param.dev_change_thr > 0 && (int)i >= m_param.min_lambda_count && df[i] > 0) {
+        double prev_dev = dev_history[i - m_param.min_lambda_count];
+        if (fabs(prev_dev) > 1e-10) {
+          double rel_change = fabs(cur_dev - prev_dev) / fabs(prev_dev);
+          if (rel_change < m_param.dev_change_thr) {
+            if (m_param.verbose) {
+              SAM_PRINTF("  early stop: dev_change=%.2e < %.2e\n",
+                      rel_change, m_param.dev_change_thr);
+              SAM_FFLUSH();
+            }
+            for (size_t j = i + 1; j < lambdas.size(); j++) {
+              solution_path.push_back(m_obj->get_model_param());
+              df[j] = df[i]; sse[j] = sse[i]; itercnt_path[j] = 0;
+            }
+            break;
+          }
+        }
+      }
 
     }
 
